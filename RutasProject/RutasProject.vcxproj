@@ -130,7 +130,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="RutasProject.cpp" />
+    <ClCompile Include="FileManager.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Map.cpp" />
+    <ClCompile Include="Point.cpp" />
+    <ClCompile Include="Route.cpp" />
+    <ClCompile Include="RouteManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="define.h" />
+    <ClInclude Include="FileManager.h" />
+    <ClInclude Include="Map.h" />
+    <ClInclude Include="Point.h" />
+    <ClInclude Include="Route.h" />
+    <ClInclude Include="RouteManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

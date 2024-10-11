@@ -1,2 +1,8 @@
-﻿  RutasProject.cpp
+﻿  FileManager.cpp
+  main.cpp
+  Map.cpp
+  Point.cpp
+  Route.cpp
+  RouteManager.cpp
+  Generando código...
   RutasProject.vcxproj -> C:\Map_Project\RutasProject\x64\Debug\RutasProject.exe
