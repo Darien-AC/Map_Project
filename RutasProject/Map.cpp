@@ -1,197 +1,265 @@
 #include "Map.h"
+#include <iostream>
 
-Map::Map() : currentColor(Color::White), addButton(Vector2f(300, 80)), closeButton(Vector2f(300, 80)),
-addPointButton(Vector2f(300, 80)), deletePointButton(Vector2f(300, 80)),
-saveRouteButton(Vector2f(300, 80)), showRouteButton(Vector2f(300, 80)),
-clearMapButton(Vector2f(300, 80))
-{
-	// Cargar texturas para los botones
-	if (!addButtonTexture.loadFromFile("imagens/agregar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Agregar'" << endl;
-	}
-	if (!closeButtonTexture.loadFromFile("imagens/eliminar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Cerrar'" << endl;
-	}
-	if (!addPointButtonTexture.loadFromFile("imagens/guardar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Agregar Punto'" << endl;
-	}
-	if (!deletePointButtonTexture.loadFromFile("imagens/mostrar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Eliminar Punto'" << endl;
-	}
-	if (!saveRouteButtonTexture.loadFromFile("imagens/limpiar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Guardar Ruta'" << endl;
-	}
-	if (!showRouteButtonTexture.loadFromFile("imagens/3.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Mostrar Ruta'" << endl;
-	}
-	if (!clearMapButtonTexture.loadFromFile("imagens/salir.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Limpiar Mapa'" << endl;
-	}
+RouteManager routeManager;
+FileManager fileManager;
+Route currentRoute("Unnamed Route");
 
-	// Asignar las texturas a los botones
-	addButton.setTexture(&addButtonTexture);
-	closeButton.setTexture(&closeButtonTexture);
-	addPointButton.setTexture(&addPointButtonTexture);
-	deletePointButton.setTexture(&deletePointButtonTexture);
-	saveRouteButton.setTexture(&saveRouteButtonTexture);
-	showRouteButton.setTexture(&showRouteButtonTexture);
-	clearMapButton.setTexture(&clearMapButtonTexture);
+Map::Map() : window(sf::VideoMode(1600, 900), "Touristic Map") {
+    window.setFramerateLimit(60);
+    if (!mapTexture.loadFromFile("images/mapa225.jpg")) {
+        std::cerr << "Error loading map image.\n";
+        exit(-1);
+    }
+    mapSprite.setTexture(mapTexture);
+    mapSprite.setPosition(800, 0);
+    mapSprite.setScale(800.0f / mapTexture.getSize().x, 900.0f / mapTexture.getSize().y);
+    routeManager.loadRoutes(); // Cargar las rutas al iniciar el programa
 
-	// Posicionar los botones más arriba
-	float buttonX = 150;
-	float startY = 50;
-	float spacingY = 120;
+    const std::string buttonImagePaths[6] = {
+        "images/agregar.jpg", "images/editar.jpg",//editar
+        "images/mostrar.jpg", "images/limpiar.jpg",
+        "images/salir.jpg", "images/eliminar.jpg"
+    };
+    for (int i = 0; i < 6; ++i) {
+        if (!buttonTextures[i].loadFromFile(buttonImagePaths[i])) {
+            std::cerr << "Error loading button image: " << buttonImagePaths[i] << "\n";
+        }
+    }
 
-	addButton.setPosition(buttonX, startY);
-	closeButton.setPosition(buttonX, startY + spacingY);
-	addPointButton.setPosition(buttonX, startY + 2 * spacingY);
-	deletePointButton.setPosition(buttonX, startY + 3 * spacingY);
-	saveRouteButton.setPosition(buttonX, startY + 4 * spacingY);
-	showRouteButton.setPosition(buttonX, startY + 5 * spacingY);
-	clearMapButton.setPosition(buttonX, startY + 6 * spacingY);
+    for (int i = 0; i < 6; ++i) {
+        buttonSprites[i].setTexture(buttonTextures[i]);
+        buttonSprites[i].setPosition(350, 100 + i * 130);
+
+        float scaleX = 300.0f / buttonTextures[i].getSize().x;
+        float scaleY = 100.0f / buttonTextures[i].getSize().y;
+        buttonSprites[i].setScale(scaleX, scaleY);
+    }
+    buttonSprites[5].setTexture(buttonTextures[5]); // deletePointButton
+    buttonSprites[5].setPosition(350, 300);
+    buttonSprites[5].setColor(sf::Color(128, 128, 128, 128)); // Initially invisible
+
+    routeManager.loadRoutes();
+
+    creatingRoute = false;
+    editingRoute = false;
+
+    Route currentRoute("Unnamed Route");
+
+    selectedColor = Color::Blue;
+
+    fileManager.loadRoutesFromFile(routeNamesText, chooseColor);
+    setupDividerLine();
+    setupFonts();
+    setupColorPalette();
 }
 
+void Map::handleEvents() {
+    sf::Event event;
+    while (window.pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            routeManager.saveRoutes(); // Guardar rutas antes de cerrar
+            window.close();
+        }
 
+        if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+            sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
 
-Map::Map(const std::string& mapFile, const std::string& backgroundFile, const Color& color)
-	: currentColor(color), addButton(Vector2f(300, 80)), closeButton(Vector2f(300, 80)),
-	addPointButton(Vector2f(300, 80)), deletePointButton(Vector2f(300, 80)),
-	saveRouteButton(Vector2f(300, 80)), showRouteButton(Vector2f(300, 80)),
-	clearMapButton(Vector2f(300, 80))
-{
-	// Cargar la textura del mapa
-	if (!mapTexture.loadFromFile(mapFile)) {
-		cout << "Error al cargar la imagen del mapa" << endl;
-	}
-	mapSprite.setTexture(mapTexture);
+            if (!creatingRoute && !editingRoute) {
+                for (int i = 0; i < 5; ++i) {
+                    if (buttonSprites[i].getGlobalBounds().contains(mousePos)) {
+                        if (i == 0) { // addRouteButton
+                            creatingRoute = true;
+                            routeManager.routesVisible = true; // Hacer visibles las rutas
+                            for (int j = 1; j < 5; ++j) {
+                                buttonSprites[j].setColor(sf::Color(128, 128, 128, 128));
+                            }
+                            buttonSprites[0].setPosition(250, 500);
+                            buttonTextures[0].loadFromFile("images/guardar.jpg");
+                            buttonSprites[0].setTexture(buttonTextures[0]);
 
-	// Escalar la textura del mapa
-	Vector2u textureSize = mapTexture.getSize();
-	float desiredWidth = 880.0f;
-	float desiredHeight = 900.0f;
-	float scaleX = desiredWidth / textureSize.x;
-	float scaleY = desiredHeight / textureSize.y;
-	mapSprite.setScale(scaleX, scaleY);
-	mapSprite.setPosition(700.0f, 0.0f);
+                            break;
+                        }
+                        else if (i == 1) { // editRouteButton
+                            editingRoute = true;
+                            routeManager.routesVisible = true; // Hacer visibles las rutas
+                            for (int j = 0; j < 5; ++j) {
+                                buttonSprites[j].setColor(sf::Color(128, 128, 128, 128));
+                            }
+                            buttonSprites[3].setColor(sf::Color::White); // Show clearRoutesButton
+                            buttonSprites[5].setColor(sf::Color::White); // Show deletePointButton
 
-	// Cargar la textura del fondo
-	if (!backgroundTexture.loadFromFile(backgroundFile)) {
-		cout << "Error al cargar la imagen de fondo" << endl;
-	}
-	backgroundSprite.setTexture(backgroundTexture);
+                            buttonTextures[3].loadFromFile("images/borrar.jpg");
+                            buttonSprites[3].setTexture(buttonTextures[3]);
+                            buttonSprites[3].setPosition(350, 500);
+                        }
+                        else if (i == 2) { // showRouteButton (botón de mostrar ruta)
+                            routeManager.routesVisible = true; // Hacer visibles las rutas
+                        }
+                        else if (i == 3) {
+                            routeManager.routesVisible = false; // Hacer visibles las rutas
+                        }
+                        else if (i == 4) {
+                            routeManager.saveRoutes();
+                            window.close();
+                        }
+                    }
+                }
+            }
+            else if (creatingRoute) {
+                if (mousePos.x < 900 && mousePos.y < 120) {
+                    // Color selection
+                    for (int i = 0; i < 7; ++i) {
+                        if (colorPalette[i].getGlobalBounds().contains(mousePos)) {
+                            selectedColor = colors[i];
+                            break;
+                        }
+                    }
+                }
+                else if (mousePos.x > 800) {
+                    std::string placeName;
+                    std::cout << "Digite el nombre del lugar: ";
+                    std::cin >> placeName;
+                    Point point(mousePos, placeName, selectedColor); // Use selectedColor
+                    currentRoute.points.push_back(point);
+                }
+                else if (buttonSprites[0].getGlobalBounds().contains(mousePos)) {
+                    std::string routeName;
+                    std::cout << "Ingrese el nombre de la ruta: ";
+                    std::cin >> routeName;
+                    currentRoute.routeName = routeName;
+                    routeManager.addRoute(currentRoute);
+                    currentRoute.points.clear();
+                    creatingRoute = false;
+                    routeManager.routesVisible = false; // Ocultar las rutas después de guardar
 
-	// Escalar el fondo al tamaño de la ventana
-	Vector2u windowSize(1600, 900);
-	scaleX = (float)windowSize.x / backgroundTexture.getSize().x;
-	scaleY = (float)windowSize.y / backgroundTexture.getSize().y;
-	backgroundSprite.setScale(scaleX, scaleY);
+                    for (int j = 0; j < 5; ++j) {
+                        buttonSprites[j].setColor(sf::Color::White);
+                        buttonTextures[0].loadFromFile("images/agregar.jpg");
+                        buttonSprites[0].setTexture(buttonTextures[0]);
+                        buttonSprites[0].setPosition(350, 100);
+                    }
 
-	// Cargar texturas para los botones
-	if (!addButtonTexture.loadFromFile("imagens/agregar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Agregar'" << endl;
-	}
-	if (!closeButtonTexture.loadFromFile("imagens/eliminar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Cerrar'" << endl;
-	}
-	if (!addPointButtonTexture.loadFromFile("imagens/guardar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Agregar Punto'" << endl;
-	}
-	if (!deletePointButtonTexture.loadFromFile("imagens/mostrar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Eliminar Punto'" << endl;
-	}
-	if (!saveRouteButtonTexture.loadFromFile("imagens/limpiar.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Guardar Ruta'" << endl;
-	}
-	if (!showRouteButtonTexture.loadFromFile("imagens/3.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Mostrar Ruta'" << endl;
-	}
-	if (!clearMapButtonTexture.loadFromFile("imagens/salir.jpg")) {
-		cout << "Error al cargar la imagen del botón 'Limpiar Mapa'" << endl;
-	}
+                    sf::Text routeNameText(routeName, routesList, 15);
+                    routeNameText.setFillColor(sf::Color::White);
+                    routeNameText.setPosition(30, 50 + routeNamesText.size() * 25); // Ajusta la posición según el índice
+                    routeNamesText.push_back(routeNameText);
 
-	// Asignar las texturas a los botones
-	addButton.setTexture(&addButtonTexture);
-	closeButton.setTexture(&closeButtonTexture);
-	addPointButton.setTexture(&addPointButtonTexture);
-	deletePointButton.setTexture(&deletePointButtonTexture);
-	saveRouteButton.setTexture(&saveRouteButtonTexture);
-	showRouteButton.setTexture(&showRouteButtonTexture);
-	clearMapButton.setTexture(&clearMapButtonTexture);
-
-	// Ajustar los botones más arriba
-	float buttonX = 150;
-	float startY = 50;
-	float spacingY = 120;
-
-	addButton.setPosition(buttonX, startY);
-	closeButton.setPosition(buttonX, startY + spacingY);
-	addPointButton.setPosition(buttonX, startY + 2 * spacingY);
-	deletePointButton.setPosition(buttonX, startY + 3 * spacingY);
-	saveRouteButton.setPosition(buttonX, startY + 4 * spacingY);
-	showRouteButton.setPosition(buttonX, startY + 5 * spacingY);
-	clearMapButton.setPosition(buttonX, startY + 6 * spacingY);
+                    currentRoute.points.clear();
+                }
+            }
+            else if (editingRoute) {
+                if (buttonSprites[3].getGlobalBounds().contains(mousePos) && routeManager.selectedRoute) {
+                    routeManager.deleteSelectedRoute(routeNamesText);
+                    for (size_t i = 0; i < routeNamesText.size(); ++i) {
+                        routeNamesText[i].setPosition(20, 50 + i * 25); // Reajusta la posición en función del índice
+                    }
+                    editingRoute = false; // Exit editing mode after deleting
+                    routeManager.routesVisible = false; // Ocultar las rutas después de guardar
+                    for (int j = 0; j < 5; ++j) {
+                        buttonSprites[j].setColor(sf::Color::White);
+                        buttonTextures[3].loadFromFile("images/limpiar.jpg");
+                        buttonSprites[3].setTexture(buttonTextures[3]);
+                        buttonSprites[3].setPosition(350, 490);
+                    }
+                    buttonSprites[0].setPosition(350, 100);
+                    buttonSprites[5].setColor(sf::Color(128, 128, 128, 128)); // Hide deletePointButton
+                }
+                else if (buttonSprites[5].getGlobalBounds().contains(mousePos) && routeManager.selectedRoute) {
+                    routeManager.selectedRoute->deletePoint(mousePos); // Eliminar el punto seleccionado
+                    std::cout << "Eliminado\n";
+                }
+                else {
+                    routeManager.deselectRoute();
+                    routeManager.selectRoute(mousePos);
+                }
+            }
+        }
+    }
 }
 
-void Map::draw(RenderWindow& window)
-{
-	window.draw(backgroundSprite);  // Dibujar el fondo
-	window.draw(mapSprite);         // Dibujar el mapa
-
-	// Dibujar los botones
-	window.draw(addButton);
-	window.draw(closeButton);
-	window.draw(addPointButton);
-	window.draw(deletePointButton);
-	window.draw(saveRouteButton);
-	window.draw(showRouteButton);
-	window.draw(clearMapButton);
+void Map::update() {
+    // Aquí se pueden actualizar las rutas y otros elementos si es necesario
 }
 
-void Map::handleEvents(RenderWindow& window, Event& event)
+void Map::setupColorPalette()
 {
-	if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left)
-	{
-		Vector2i mousePos = Mouse::getPosition(window); // Obtener la posición del ratón
-		if (addButton.getGlobalBounds().contains(static_cast<Vector2f>(mousePos)))
-		{
-			if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-				// Obtener la posición del clic
-				sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-				// Establecer la posición del círculo
-				mapPoint.setPosition(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
-				cout << "Posision: " << "\nX: " << static_cast<float>(mousePos.x) << "\nY: " << static_cast<float>(mousePos.y);
-			}
-			cout << "Botón Agregar clicado!" << endl;
-		}
-		if (closeButton.getGlobalBounds().contains(static_cast<Vector2f>(mousePos)))
-		{
-			cout << "Cerrando...." << endl;
-		}
-		if (addPointButton.getGlobalBounds().contains(static_cast<Vector2f>(mousePos)))
-		{
-			cout << "Botón Agregar Punto clicado!" << endl;
-		}
-		if (deletePointButton.getGlobalBounds().contains(static_cast<Vector2f>(mousePos)))
-		{
-			cout << "Botón Eliminar Punto clicado!" << endl;
-		}
-		if (saveRouteButton.getGlobalBounds().contains(static_cast<Vector2f>(mousePos)))
-		{
-			cout << "Botón Guardar Ruta clicado!" << endl;
-		}
-		if (showRouteButton.getGlobalBounds().contains(static_cast<Vector2f>(mousePos)))
-		{
-			cout << "Botón Mostrar Ruta clicado!" << endl;
-		}
-		if (clearMapButton.getGlobalBounds().contains(static_cast<Vector2f>(mousePos)))
-		{
-			cout << "Cerrando...." << endl;
-			window.close();
-		}
-	}
+    for (int i = 0; i < 7; ++i) {
+        colorPalette[i].setRadius(30);
+        colorPalette[i].setFillColor(colors[i]);
+        colorPalette[i].setPosition(80 + i * 90, 80);
+    }
 }
 
-bool Map::isClicked(const sf::Vector2i& mousePos)
+void Map::setupDividerLine() {
+    dividerLine.setSize(sf::Vector2f(5, window.getSize().y)); // Línea vertical de 5 px de ancho y la altura de la ventana
+    dividerLine.setPosition(210, 0); // Ajusta la posición para que quede entre "Lista de Rutas" y los botones
+    dividerLine.setFillColor(sf::Color::White); // Color de la línea
+}
+
+void Map::setupFonts()
 {
-	return addButton.getGlobalBounds().contains(static_cast<sf::Vector2f>(mousePos));
+    if (!chooseColor.loadFromFile("Chakra_Petch/ChakraPetch-Bold.ttf")) {
+        std::cout << "Error loading font.\n";
+    }
+    textPoints.setFont(chooseColor);
+    textPoints.setString("ELIJA EL COLOR DEL PUNTO");
+    textPoints.setCharacterSize(50);
+    textPoints.setPosition(60, 10);
+    textPoints.setFillColor(sf::Color::White);
+
+    if (!routesList.loadFromFile("Chakra_Petch/ChakraPetch-Bold.ttf")) {
+        std::cerr << "Error loading font.\n";
+    }
+    routeListHeader.setFont(routesList);
+    routeListHeader.setString("Lista de Rutas");
+    routeListHeader.setCharacterSize(20);
+    routeListHeader.setPosition(30, 20);
+    routeListHeader.setFillColor(sf::Color::White);
+}
+
+void Map::render() {
+    window.clear(sf::Color::Black);
+    window.draw(mapSprite);
+
+    if (!creatingRoute && !editingRoute) {
+        for (int i = 0; i < 5; ++i) {
+            window.draw(buttonSprites[i]);
+        }
+
+        window.draw(routeListHeader);
+        /*for (auto& routeText : routeNamesText) {
+            window.draw(routeText);
+        }*/
+        window.draw(dividerLine);
+    }
+    else if (creatingRoute) {
+        for (int i = 0; i < 7; ++i) {
+            window.draw(colorPalette[i]);
+        }
+        window.draw(buttonSprites[0]);
+        window.draw(textPoints);
+    }
+    else if (editingRoute) {
+        window.draw(buttonSprites[3]); // Draw clearRoutesButton
+        window.draw(buttonSprites[5]); // Draw deletePointButton
+        window.draw(routeListHeader);
+        /*for (auto& routeText : routeNamesText) {
+            window.draw(routeText);
+        }*/
+        window.draw(dividerLine);
+    }
+
+    routeManager.draw(window);
+    currentRoute.draw(window);
+
+    window.display();
+}
+
+void Map::run() {
+    while (window.isOpen()) {
+        handleEvents();
+        update();
+        render();
+    }
 }

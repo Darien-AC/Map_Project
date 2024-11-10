@@ -1,20 +1,15 @@
 #pragma once
 #include "define.h"
 
-class Point
-{
-private:
-    string name;
-    Vector2f position;
-    Color color;
-    CircleShape mapPoint;
-    float pointSize;
+#include <SFML/Graphics.hpp>
+#include <string>
 
+class Point {
 public:
-    Point();
-    Point(const string& name, const Vector2f& position, const Color& color, float pointSize);
+    sf::Vector2f position;
+    std::string name;
+    sf::Color color;
 
-    void setPosition(float x, float y);
+    Point(const sf::Vector2f& pos, const std::string& n, sf::Color c);
     void draw(sf::RenderWindow& window);
-    Vector2f getPosition() const;
 };

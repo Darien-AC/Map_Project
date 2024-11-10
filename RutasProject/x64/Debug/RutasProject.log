@@ -1,4 +1,30 @@
-﻿  main.cpp
-  PointsAndRoutesList.cpp
+﻿  FileManager.cpp
+  Map.cpp
+C:\Map_Project\RutasProject\Map.cpp(32,47): warning C4244: 'argumento': conversión de 'int' a 'float'; posible pérdida de datos
+C:\Map_Project\RutasProject\Map.cpp(66,73): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Map_Project\RutasProject\Map.cpp(66,73): warning C4244:         with
+C:\Map_Project\RutasProject\Map.cpp(66,73): warning C4244:         [
+C:\Map_Project\RutasProject\Map.cpp(66,73): warning C4244:             T=float
+C:\Map_Project\RutasProject\Map.cpp(66,73): warning C4244:         ]
+C:\Map_Project\RutasProject\Map.cpp(66,52): warning C4244: 'argumento': conversión de 'int' a 'T'; posible pérdida de datos
+C:\Map_Project\RutasProject\Map.cpp(66,52): warning C4244:         with
+C:\Map_Project\RutasProject\Map.cpp(66,52): warning C4244:         [
+C:\Map_Project\RutasProject\Map.cpp(66,52): warning C4244:             T=float
+C:\Map_Project\RutasProject\Map.cpp(66,52): warning C4244:         ]
+C:\Map_Project\RutasProject\Map.cpp(145,54): warning C4244: 'argumento': conversión de 'unsigned __int64' a 'float'; posible pérdida de datos
+C:\Map_Project\RutasProject\Map.cpp(155,62): warning C4244: 'argumento': conversión de 'size_t' a 'float'; posible pérdida de datos
+C:\Map_Project\RutasProject\Map.cpp(190,40): warning C4244: 'argumento': conversión de 'int' a 'float'; posible pérdida de datos
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244: 'argumento': conversión de 'T' a 'T'; posible pérdida de datos
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:         with
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:         [
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:             T=unsigned int
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:         ]
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:         and
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:         [
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:             T=float
+C:\Map_Project\RutasProject\Map.cpp(195,57): warning C4244:         ]
+  RouteManager.cpp
+C:\Map_Project\RutasProject\RouteManager.cpp(100,34): warning C4244: 'argumento': conversión de 'unsigned __int64' a 'float'; posible pérdida de datos
+  main.cpp
   Generando código...
   RutasProject.vcxproj -> C:\Map_Project\RutasProject\x64\Debug\RutasProject.exe
