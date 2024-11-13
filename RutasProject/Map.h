@@ -30,7 +30,7 @@ public:
 
     Text textPoints;
     Text routeListHeader;
-    vector<sf::Text> routeNamesText;
+    vector<Text> routeNamesText;
 
     bool creatingRoute;
     bool editingRoute;

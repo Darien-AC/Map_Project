@@ -228,9 +228,9 @@ void Map::render() {
         }
 
         window.draw(routeListHeader);
-        /*for (auto& routeText : routeNamesText) {
+        for (auto& routeText : routeNamesText) {
             window.draw(routeText);
-        }*/
+        }
         window.draw(dividerLine);
     }
     else if (creatingRoute) {
@@ -244,9 +244,9 @@ void Map::render() {
         window.draw(buttonSprites[3]); // Draw clearRoutesButton
         window.draw(buttonSprites[5]); // Draw deletePointButton
         window.draw(routeListHeader);
-        /*for (auto& routeText : routeNamesText) {
+        for (auto& routeText : routeNamesText) {
             window.draw(routeText);
-        }*/
+        }
         window.draw(dividerLine);
     }
 
